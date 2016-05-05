@@ -22,10 +22,12 @@ brooklyn.catalog:
   name: MariaDB Node
   description: MariaDB is an open source relational database management system (RDBMS)
   itemType: template
+  iconUrl: http://badges.mariadb.org/mariadb-badge-180x60.png
   license: Apache-2.0
   publish:
     license_code: Apache-2.0
     reference: reference.json
+    qa: catalog.tests.bom
   item:
     services:
     - type: org.apache.brooklyn.entity.database.mariadb.MariaDbNode
