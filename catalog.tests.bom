@@ -18,7 +18,7 @@
 #
 brooklyn.catalog:
   id: brooklyn-mariadb-node-tests
-  version: 0.10.0-SNAPSHOT
+  version: 0.2
   itemType: template
   iconUrl: http://badges.mariadb.org/mariadb-badge-180x60.png
   name: MariaDB Node tests
@@ -27,36 +27,30 @@ brooklyn.catalog:
   license_url: http://www.apache.org/licenses/LICENSE-2.0.txt
   item:
     services:
+    - type: brooklyn-mariadb-node
+      id: mariadbnode
+      brooklyn.config:
+        datastore.creation.script.contents: |
+          CREATE DATABASE temporary;
+          USE temporary;
+          CREATE TABLE users (name VARCHAR(20), owner VARCHAR(20), creation_date DATE, updated_date DATE);
+          INSERT INTO users VALUES ('mysql', 'mysql', CURDATE(), CURDATE())
     - type: org.apache.brooklyn.test.framework.TestCase
       name: MariaDB Node tests
       targetId: mariadbnode
+      brooklyn.config:
+        timeout: 15m
       brooklyn.children:
-      - type: brooklyn-mariadb-node
-        id: mariadbnode
-        brooklyn.config:
-          datastore.creation.script.contents: |
-            CREATE DATABASE temporary;
-            USE temporary;
-            CREATE TABLE users (name VARCHAR(20), owner VARCHAR(20), creation_date DATE, updated_date DATE);
-            INSERT INTO users VALUES ('mysql', 'mysql', CURDATE(), CURDATE())
-          mariadb.port: 6789
 
-      # Sensors tests
+      # Base tests
       - type: org.apache.brooklyn.test.framework.TestCase
-        name: Sensors Tests
+        name: Base Tests
         brooklyn.children:
         - type: org.apache.brooklyn.test.framework.TestSensor
           name: Check MariaDB server is up
           sensor: service.isUp
-          timeout: 10m
           assert:
           - equals: true
-        - type: org.apache.brooklyn.test.framework.TestSensor
-          name: Check MariaDB port is setup correctly
-          sensor: mariadb.port
-          timeout: 1m
-          assert:
-          - equals: 6789
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: Check MariaDB creating script has been executed
           runDir: $brooklyn:entity("mariadbnode").attributeWhenReady("run.dir")
@@ -79,7 +73,6 @@ brooklyn.catalog:
             commands: |
               USE temporary;
               INSERT INTO users VALUES ('root', 'root', CURDATE(), CURDATE());
-          timeout: 1m
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: Check MariaDB creating script has been executed
           runDir: $brooklyn:entity("mariadbnode").attributeWhenReady("run.dir")
@@ -100,11 +93,9 @@ brooklyn.catalog:
           effector: restart
           params:
             restartMachine: false
-          timeout: 5m
         - type: org.apache.brooklyn.test.framework.TestSensor
           name: Check MariaDB is up after restart
           sensor: service.isUp
-          timeout: 1m
           assert:
           - equals: true
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
@@ -112,10 +103,6 @@ brooklyn.catalog:
           command: ps -ef | grep [m]ysql
           assertStatus:
             equals: 0
-          assertOut:
-            isEmpty: false
-          assertErr:
-            isEmpty: true
 
       # Effector: stop + restart Tests
       - type: org.apache.brooklyn.test.framework.TestCase
@@ -126,11 +113,9 @@ brooklyn.catalog:
           effector: stop
           params:
             stopMachineMode: NEVER
-          timeout: 5m
         - type: org.apache.brooklyn.test.framework.TestSensor
           name: Check MariaDB is not up after stop
           sensor: service.isUp
-          timeout: 5m
           assert:
           - equals: false
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
@@ -138,20 +123,14 @@ brooklyn.catalog:
           command: ps -ef | grep [m]ysql
           assertStatus:
             equals: 1
-          assertOut:
-            isEmpty: true
-          assertErr:
-            isEmpty: true
         - type: org.apache.brooklyn.test.framework.TestEffector
           name: Invoke restart Effector
           effector: restart
           params:
             restartMachine: false
-          timeout: 5m
         - type: org.apache.brooklyn.test.framework.TestSensor
           name: Check MariaDB is up after restart
           sensor: service.isUp
-          timeout: 1m
           assert:
           - equals: true
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
@@ -159,7 +138,3 @@ brooklyn.catalog:
           command: ps -ef | grep [m]ysql
           assertStatus:
             equals: 0
-          assertOut:
-            isEmpty: false
-          assertErr:
-            isEmpty: true
