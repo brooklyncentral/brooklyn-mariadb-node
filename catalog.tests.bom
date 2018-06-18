@@ -30,6 +30,9 @@ brooklyn.catalog:
     - type: brooklyn-mariadb-node
       id: mariadbnode
       brooklyn.config:
+        download.url: ${driver.mirrorUrl}/sites/mariadb/mariadb-${version}/bintar-linux-x86_64/mariadb-${version}-linux-x86_64.tar.gz
+        mirrorUrl: http://mirrors.ukfast.co.uk
+        version: 10.2.15
         datastore.creation.script.contents: |
           CREATE DATABASE temporary;
           USE temporary;
